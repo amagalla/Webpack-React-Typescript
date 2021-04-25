@@ -1,57 +1,74 @@
-const path = require('path');
-const webpack = require('webpack');
+const path = require("path");
+require("@babel/polyfill");
+
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+
+let mode = "development";
+
+if (process.env.NODE_ENV === "production") {
+  mode = "production";
+}
 
 module.exports = {
-  entry: ['./client/index.tsx'],
+  mode: mode,
+  // entry: ["@babel/polyfill", "./src/index.tsx"], this is for use of async and await
+
   output: {
-    path: path.resolve(__dirname, './dist'),
-    filename: 'bundle.js',
+    path: path.resolve(__dirname, "dist"),
+    assetModuleFilename: "images/[hash][ext][query]",
   },
-  resolve: {
-    extensions: ['.js', '.ts', '.tsx'],
-  },
+
   module: {
     rules: [
       {
-        test: /\.tsx?/,
+        test: /\.jsx?$/,
         exclude: /node_modules/,
-        use: ['ts-loader'],
+        use: {
+          loader: "babel-loader",
+        },
       },
       {
-        test: /\.(scss|css)$/,
+        test: /\.tsx?$/,
         exclude: /node_modules/,
-        use: ['style-loader', 'css-loader'],
+        use: ["ts-loader", "babel-loader"],
       },
       {
-        test: /\.(gif|png|jpe?g)$/,
+        test: /\.(s[ac]|c)ss$/i,
         use: [
           {
-            loader: 'file-loader',
-            options: {
-              name: '[name].[ext]',
-              outputPath: 'assets/images/',
-            },
+            loader: MiniCssExtractPlugin.loader,
+            options: { publicPath: "" },
           },
+          "css-loader",
+          "sass-loader",
         ],
       },
       {
-        test: /\.html$/,
-        use: ['html-loader'],
+        test: /\.(png|jpe?g|gif|svg)$/i,
+        type: "asset",
       },
     ],
   },
+
+  plugins: [
+    new CleanWebpackPlugin(),
+    new MiniCssExtractPlugin(),
+    new HtmlWebpackPlugin({
+      template: "./src/index.html",
+    }),
+  ],
+
+  resolve: {
+    extensions: [".js", ".ts", ".jsx", ".tsx"],
+  },
+
+  devtool: "source-map",
   devServer: {
-    port: 8080,
-    open: true,
+    contentBase: "./dist",
     hot: true,
-    publicPath: '/dist/',
+    open: true,
     historyApiFallback: true,
-    proxy: [
-      {
-        context: ['/api/**'],
-        target: 'http://localhost:3000',
-      },
-    ],
   },
-  plugins: [new webpack.HotModuleReplacementPlugin()],
 };
